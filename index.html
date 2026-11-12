@@ -1,4 +1,1202 @@
-<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레트로 겜창의 아케이드 센터</title>
+    <!-- 8비트 레트로 느낌의 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DungGeunMo&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0517;
+            --container-bg: rgba(20, 10, 35, 0.95);
+            --text-color: #00ffcc;
+            --text-secondary: #ff007f;
+            --card-bg: #1e0a38;
+            --card-back-bg: #ff007f;
+            --card-border: #00ffcc;
+            --btn-bg: #ff007f;
+            --btn-text: #ffffff;
+            --shadow-color: #ff00aa;
+            --crt-scanline: rgba(18, 16, 16, 0.3);
+            --pixel-yellow: #ffff00;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #c8d6e5;
+            --container-bg: rgba(240, 243, 246, 0.95);
+            --text-color: #10ac84;
+            --text-secondary: #ff4757;
+            --card-bg: #ffffff;
+            --card-back-bg: #ff4757;
+            --card-border: #10ac84;
+            --btn-bg: #2e86de;
+            --btn-text: #ffffff;
+            --shadow-color: #2e86de;
+            --crt-scanline: rgba(255, 255, 255, 0.1);
+            --pixel-yellow: #ff9f43;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px 10px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'DungGeunMo', 'Courier New', monospace;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 레트로 CRT 브라운관 스캔라인 효과 */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(var(--crt-scanline) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 9998;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* 캔버스 (마우스 8비트 픽셀 반짝이) */
+        #sparkleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* 전광판 형태의 상단 바 */
+        .arcade-marquee {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border: 4px solid var(--text-secondary);
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -4px 15px rgba(255, 0, 127, 0.4);
+            font-size: 13px;
+        }
+
+        .coin-status {
+            color: var(--pixel-yellow);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0.2; }
+        }
+
+        /* 테마 변경 버튼 */
+        .theme-toggle-btn {
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: 2px solid var(--btn-text);
+            padding: 6px 10px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+            transition: transform 0.1s;
+        }
+
+        .theme-toggle-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        /* 메인 아케이드 캐비닛 컨테이너 */
+        .main-container {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--container-bg);
+            border: 4px solid var(--text-color);
+            box-shadow: 0 0 20px var(--text-color), 8px 8px 0px #000;
+            padding: 25px;
+            border-radius: 0 0 12px 12px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* 8비트 스타일 네온 글리치 효과 타이틀 */
+        .header-title {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: var(--text-secondary);
+            text-shadow: 3px 3px 0px #000;
+            position: relative;
+        }
+
+        .bouncing-nickname {
+            display: inline-block;
+            font-family: 'DungGeunMo', monospace;
+            color: var(--pixel-yellow);
+            animation: bounce 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+            font-size: 3rem;
+            text-shadow: 4px 4px 0px #ff0055, 0 0 10px var(--pixel-yellow);
+            padding: 0 5px;
+            letter-spacing: 2px;
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-16px);
+            }
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            margin: 30px 0 18px 0;
+            border: 2px solid var(--text-color);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            color: var(--pixel-yellow);
+            box-shadow: 4px 4px 0px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* 레트로 카드 스타일 */
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: transparent;
+            width: 220px;
+            height: 210px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border: 4px solid var(--card-border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            box-shadow: 5px 5px 0px #000;
+        }
+
+        .card-front {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .card-front .icon {
+            font-size: 3.2rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(2px 2px 0px #000);
+        }
+
+        .card-front .hint {
+            font-size: 0.8rem;
+            color: var(--pixel-yellow);
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border: 1px dashed var(--pixel-yellow);
+        }
+
+        .card-back {
+            background-color: var(--card-back-bg);
+            color: #ffffff;
+            transform: rotateY(180deg);
+            font-size: 1rem;
+            line-height: 1.4;
+            word-break: keep-all;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* OX 퀴즈 박스 (아케이드 버튼 감성) */
+        .quiz-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.2);
+        }
+
+        .quiz-question {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            word-break: keep-all;
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .quiz-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+
+        .btn-ox {
+            width: 75px;
+            height: 75px;
+            font-size: 2.2rem;
+            font-family: 'Press Start 2P', 'DungGeunMo', monospace;
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 6px 0px #880044, 0 10px 10px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+
+        .btn-ox:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #880044, 0 4px 5px rgba(0,0,0,0.5);
+        }
+
+        .quiz-result {
+            margin-top: 18px;
+            font-size: 1.2rem;
+            min-height: 35px;
+            font-weight: bold;
+            padding: 8px;
+        }
+
+        /* 롤 챔피언 추천 슬롯머신 감성 */
+        .lol-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.2);
+        }
+
+        /* 미니게임 섹션 스타일 */
+        .minigame-box {
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 255, 204, 0.2);
+        }
+
+        .game-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-tab {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 2px solid var(--text-color);
+            padding: 8px 16px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-tab.active {
+            background-color: var(--btn-bg);
+            color: #fff;
+            border-color: #fff;
+            box-shadow: 0 0 10px var(--btn-bg);
+        }
+
+        .game-panel {
+            display: none;
+        }
+
+        .game-panel.active {
+            display: block;
+        }
+
+        .card-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            min-height: 80px;
+            flex-wrap: wrap;
+        }
+
+        .playing-card {
+            width: 55px;
+            height: 75px;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            box-shadow: 3px 3px 0px #000;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .playing-card.red {
+            color: #e74c3c;
+        }
+
+        .playing-card.selected {
+            transform: translateY(-10px);
+            border: 3px solid var(--pixel-yellow);
+            box-shadow: 0 0 10px var(--pixel-yellow);
+        }
+
+        .card-back-style {
+            background: linear-gradient(135deg, #b20000 25%, #800000 25%, #800000 50%, #b20000 50%, #b20000 75%, #800000 75%, #800000 100%);
+            background-size: 10px 10px;
+            border: 2px solid #fff;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: 2px solid #fff;
+            padding: 8px 16px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        .btn-action:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .status-msg {
+            font-size: 1.1rem;
+            color: var(--pixel-yellow);
+            margin: 10px 0;
+            min-height: 28px;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-lol {
+            padding: 14px 28px;
+            font-size: 1.2rem;
+            font-family: 'DungGeunMo', monospace;
+            background: linear-gradient(180deg, #ffee00 0%, #ff8800 100%);
+            color: #000;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            font-weight: bold;
+            transition: transform 0.1s;
+            text-shadow: 1px 1px 0px #fff;
+        }
+
+        .btn-lol:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .lol-result-screen {
+            background: #000;
+            border: 3px solid var(--pixel-yellow);
+            border-radius: 6px;
+            margin-top: 18px;
+            padding: 15px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(255, 238, 0, 0.4);
+        }
+
+        .lol-result {
+            font-size: 1.3rem;
+            color: var(--pixel-yellow);
+            text-shadow: 2px 2px 0px #ff0055;
+            word-break: keep-all;
+        }
+
+        /* 하단 푸터 아케이드 스코어 */
+        .arcade-footer {
+            margin-top: 25px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: var(--text-color);
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 600px) {
+            .header-title {
+                font-size: 1.5rem;
+            }
+            .bouncing-nickname {
+                font-size: 2.2rem;
+            }
+            .card {
+                width: 100%;
+                max-width: 280px;
+                height: 190px;
+            }
+            .section-title {
+                font-size: 1.1rem;
+            }
+            .quiz-question {
+                font-size: 1rem;
+            }
+            .btn-ox {
+                width: 65px;
+                height: 65px;
+                font-size: 1.8rem;
+            }
+            .arcade-marquee {
+                font-size: 10px;
+            }
+            .coin-status {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 마우스 8비트 반짝이 캔버스 -->
+    <canvas id="sparkleCanvas"></canvas>
+
+    <!-- 오락실 전광판 상단 바 -->
+    <div class="arcade-marquee">
+        <div class="coin-status">INSERT COIN 200.0</div>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn">☀ LIGHT MODE</button>
+    </div>
+
+    <div class="main-container">
+        <!-- 타이틀 및 통통 튀는 별명 -->
+        <div class="header-title">
+            WELCOME TO <br>
+            <span class="bouncing-nickname">겜창</span> 'S ARCADE 🕹️
+        </div>
+
+        <!-- 좋아하는 것 3가지 (카드 뒤집기) -->
+        <div class="section-title">👾 STAGE 1. FAVORITE CARDS</div>
+        <div class="card-container">
+            <!-- 카드 1: 벨코즈 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">👁️</div>
+                        <h3>벨코즈</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "완벽한 기하학적 분해! 3점 분사 레이저로 적을 해체할 때 느껴지는 지적 쾌감이 최고다!"
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카드 2: 게임 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">🎮</div>
+                        <h3>게임</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "내 인생의 도파민 충전소! 화면 속 세상에서 퀘스트 깨고 랭크 올릴 때가 제일 신남!"
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카드 3: 동물 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">🐶</div>
+                        <h3>동물</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "귀여운 털뭉치들은 세상을 구한다! 힐링 그 자체라 귀여워서 안 좋아할 수가 없음."
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OX 퀴즈 -->
+        <div class="section-title">❓ STAGE 2. OX QUIZ</div>
+        <div class="quiz-box">
+            <div class="quiz-question">Q. "메가 홍균이 귀엽다고 생각하는가?"</div>
+            <div class="quiz-buttons">
+                <button class="btn-ox" onclick="checkQuiz('O')">O</button>
+                <button class="btn-ox" onclick="checkQuiz('X')">X</button>
+            </div>
+            <div class="quiz-result" id="quizResult"></div>
+        </div>
+
+        <!-- 롤 챔피언 추천기 -->
+        <div class="section-title">🎲 STAGE 3. LOL PICK SLOT</div>
+        <div class="lol-box">
+            <button class="btn-lol" id="btnLol" onclick="recommendChampion()">🕹️ 챔피언 랜덤 픽!</button>
+            <div class="lol-result-screen">
+                <div class="lol-result" id="lolResult">PRESS BUTTON TO ROLL</div>
+            </div>
+        </div>
+
+        <!-- STAGE 4. 레트로 마이닝 (광산 클릭) -->
+        <div class="section-title">⛏️ STAGE 4. COIN MINE</div>
+        <div class="minigame-box" style="text-align: center;">
+            <div class="status-msg" id="mineStatus">곡괭이질을 해서 코인을 캐내세요! (클릭당 +0.1 COIN)</div>
+            <div style="margin: 20px 0;">
+                <button class="btn-lol" onclick="mineCoin(event)" style="font-size: 1.5rem; padding: 20px 40px; background: linear-gradient(180deg, #575833 0%, #2f3640 100%); color: #00ffcc; border-color: #00ffcc;">
+                    ⛏️ CLICK TO MINE!
+                </button>
+            </div>
+            <div style="font-size: 1.1rem; color: var(--pixel-yellow);">
+                채굴된 코인: <span id="minedCoins">0.0</span> COIN
+            </div>
+        </div>
+
+        <!-- STAGE 5. 레트로 카지노 미니게임 -->
+        <div class="section-title">🃏 STAGE 5. RETRO CASINO</div>
+        <div class="minigame-box">
+            <div class="game-nav">
+                <button class="btn-tab active" onclick="switchGame('bj', event)">블랙잭 (Blackjack)</button>
+                <button class="btn-tab" onclick="switchGame('poker', event)">비디오 포커 (Poker)</button>
+            </div>
+
+            <!-- 블랙잭 패널 -->
+            <div id="bjPanel" class="game-panel active">
+                <div class="status-msg" id="bjStatus">코인을 배팅하고 게임을 시작하세요!</div>
+                <div>
+                    <p>딜러 카드 <span id="dealerScore"></span></p>
+                    <div class="card-display" id="dealerCards"></div>
+                </div>
+                <div>
+                    <p>플레이어 카드 <span id="playerScore"></span></p>
+                    <div class="card-display" id="playerCards"></div>
+                </div>
+                <div class="game-controls">
+                    <button class="btn-action" id="bjBetBtn" onclick="startBlackjack()">배팅 (10 COIN)</button>
+                    <button class="btn-action" id="hitBtn" onclick="bjHit()" disabled>히트 (Hit)</button>
+                    <button class="btn-action" id="standBtn" onclick="bjStand()" disabled>스탠드 (Stand)</button>
+                </div>
+            </div>
+
+            <!-- 비디오 포커 패널 -->
+            <div id="pokerPanel" class="game-panel">
+                <div class="status-msg" id="pokerStatus">교체할 카드를 클릭 후 DRAW를 누르세요!</div>
+                <div class="card-display" id="pokerCards"></div>
+                <div class="game-controls">
+                    <button class="btn-action" id="pokerBetBtn" onclick="startPoker()">게임 시작 (10 COIN)</button>
+                    <button class="btn-action" id="drawBtn" onclick="pokerDraw()" disabled>카드 교체 (Draw)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 아케이드 풋터 -->
+        <div class="arcade-footer">
+            HIGH SCORE: 999999 | CREDIT: <span id="coinCount">200.0</span>
+        </div>
+    </div>
+
+    <script>
+        /* --- 1. 테마 전환 (라이트/다크) --- */
+        let isDark = true;
+        function toggleTheme() {
+            isDark = !isDark;
+            const themeBtn = document.getElementById('themeBtn');
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                themeBtn.innerText = '☀ LIGHT MODE';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeBtn.innerText = '🌙 DARK MODE';
+            }
+        }
+
+        /* --- 코인 시스템 --- */
+        let coins = 200.0;
+        let minedCoinsTotal = 0.0;
+
+        function updateCoins(amount) {
+            coins = Math.round((coins + amount) * 10) / 10;
+            document.getElementById('coinCount').innerText = coins.toFixed(1);
+            document.querySelector('.coin-status').innerText = `INSERT COIN ${coins.toFixed(1)}`;
+        }
+
+        /* --- 캔버스 8비트 파티클 이펙트 --- */
+        const canvas = document.getElementById('sparkleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class PixelParticle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.floor(Math.random() * 4) + 3;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4 - 2;
+                this.color = ['#00ffcc', '#ff007f', '#ffff00', '#ffffff'][Math.floor(Math.random() * 4)];
+                this.life = 30;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // 중력
+                this.life--;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (Math.random() < 0.3) {
+                particles.push(new PixelParticle(e.clientX, e.clientY));
+            }
+        });
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* --- 4-1. 광산 채굴 클릭 함수 --- */
+        function mineCoin(e) {
+            updateCoins(0.1);
+            minedCoinsTotal = Math.round((minedCoinsTotal + 0.1) * 10) / 10;
+            document.getElementById('minedCoins').innerText = minedCoinsTotal.toFixed(1);
+
+            const x = e.clientX || e.pageX;
+            const y = e.clientY || e.pageY;
+            if (x && y) {
+                for (let i = 0; i < 6; i++) {
+                    particles.push(new PixelParticle(x, y));
+                }
+            }
+        }
+
+        /* --- 카드 덱 생성 공통 함수 --- */
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+        function createDeck() {
+            let deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            return deck.sort(() => Math.random() - 0.5);
+        }
+
+        function createCardUI(card, isHidden = false, isSelected = false) {
+            const cardEl = document.createElement('div');
+            if (isHidden) {
+                cardEl.className = 'playing-card card-back-style';
+                return cardEl;
+            }
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            cardEl.className = `playing-card ${isRed ? 'red' : ''} ${isSelected ? 'selected' : ''}`;
+            cardEl.innerHTML = `<div>${card.value}</div><div style="align-self:center;font-size:16px;">${card.suit}</div><div style="align-self:flex-end;">${card.value}</div>`;
+            return cardEl;
+        }
+
+        /* --- 탭 전환 --- */
+        function switchGame(game, event) {
+            document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.game-panel').forEach(panel => panel.classList.remove('active'));
+
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            if (game === 'bj') {
+                document.getElementById('bjPanel').classList.add('active');
+            } else {
+                document.getElementById('pokerPanel').classList.add('active');
+            }
+        }
+
+        /* --- 2. 블랙잭 게임 로직 --- */
+        let bjDeck, dealerHand, playerHand, bjGameOver;
+
+        function getCardValue(card) {
+            if (['J', 'Q', 'K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 11;
+            return parseInt(card.value);
+        }
+
+        function calcHandScore(hand) {
+            let score = 0;
+            let aces = 0;
+            for (let card of hand) {
+                let val = getCardValue(card);
+                if (card.value === 'A') aces++;
+                score += val;
+            }
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+            return score;
+        }
+
+        function renderBJ() {
+            const dCards = document.getElementById('dealerCards');
+            const pCards = document.getElementById('playerCards');
+            dCards.innerHTML = '';
+            pCards.innerHTML = '';
+
+            dealerHand.forEach((card, i) => {
+                dCards.appendChild(createCardUI(card, !bjGameOver && i === 1));
+            });
+            playerHand.forEach(card => pCards.appendChild(createCardUI(card)));
+
+            document.getElementById('playerScore').innerText = `(${calcHandScore(playerHand)})`;
+            document.getElementById('dealerScore').innerText = bjGameOver ? `(${calcHandScore(dealerHand)})` : '';
+        }
+
+        function startBlackjack() {
+            if (coins < 10) return showMessage('bjStatus', '코인이 부족합니다!');
+            updateCoins(-10);
+
+            bjDeck = createDeck();
+            playerHand = [bjDeck.pop(), bjDeck.pop()];
+            dealerHand = [bjDeck.pop(), bjDeck.pop()];
+            bjGameOver = false;
+
+            document.getElementById('bjStatus').innerText = '히트 또는 스탠드를 선택하세요!';
+            document.getElementById('hitBtn').disabled = false;
+            document.getElementById('standBtn').disabled = false;
+            document.getElementById('bjBetBtn').disabled = true;
+
+            renderBJ();
+
+            if (calcHandScore(playerHand) === 21) {
+                bjEndGame('★ 블랙잭! 20 코인 획득! ★', 20);
+            }
+        }
+
+        function bjHit() {
+            playerHand.push(bjDeck.pop());
+            renderBJ();
+            if (calcHandScore(playerHand) > 21) {
+                bjEndGame('버스트! 딜러 승리 😭', 0);
+            }
+        }
+
+        function bjStand() {
+            while (calcHandScore(dealerHand) < 17) {
+                dealerHand.push(bjDeck.pop());
+            }
+            const pScore = calcHandScore(playerHand);
+            const dScore = calcHandScore(dealerHand);
+
+            if (dScore > 21 || pScore > dScore) {
+                bjEndGame('승리! 20 코인 획득! 🎉', 20);
+            } else if (pScore < dScore) {
+                bjEndGame('패배! 딜러 승리 💸', 0);
+            } else {
+                bjEndGame('무승부! 배팅금 환불 🤝', 10);
+            }
+        }
+
+        function bjEndGame(msg, winCoins) {
+            bjGameOver = true;
+            renderBJ();
+            document.getElementById('bjStatus').innerText = msg;
+            if (winCoins > 0) updateCoins(winCoins);
+
+            document.getElementById('hitBtn').disabled = true;
+            document.getElementById('standBtn').disabled = true;
+            document.getElementById('bjBetBtn').disabled = false;
+        }
+
+        /* --- 3. 비디오 포커 로직 --- */
+        let pokerDeck, pokerHand, selectedHold, pokerStage;
+
+        function startPoker() {
+            if (coins < 10) return showMessage('pokerStatus', '코인이 부족합니다!');
+            updateCoins(-10);
+
+            pokerDeck = createDeck();
+            pokerHand = [pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop()];
+            selectedHold = [false, false, false, false, false];
+            pokerStage = 1;
+
+            document.getElementById('pokerStatus').innerText = '바꿀 카드를 클릭하고 DRAW 버튼을 누르세요!';
+            document.getElementById('pokerBetBtn').disabled = true;
+            document.getElementById('drawBtn').disabled = false;
+
+            renderPoker();
+        }
+
+        function renderPoker() {
+            const pCards = document.getElementById('pokerCards');
+            pCards.innerHTML = '';
+
+            pokerHand.forEach((card, i) => {
+                const cardUI = createCardUI(card, false, selectedHold[i]);
+                if (pokerStage === 1) {
+                    cardUI.onclick = () => {
+                        selectedHold[i] = !selectedHold[i];
+                        renderPoker();
+                    };
+                }
+                pCards.appendChild(cardUI);
+            });
+        }
+
+        function pokerDraw() {
+            for (let i = 0; i < 5; i++) {
+                if (selectedHold[i]) {
+                    pokerHand[i] = pokerDeck.pop();
+                }
+            }
+            pokerStage = 2;
+            renderPoker();
+
+            const result = evaluatePokerHand(pokerHand);
+            document.getElementById('pokerStatus').innerText = `${result.name}! +${result.payout} COINS!`;
+            if (result.payout > 0) updateCoins(result.payout);
+
+            document.getElementById('drawBtn').disabled = true;
+            document.getElementById('pokerBetBtn').disabled = false;
+        }
+
+        function evaluatePokerHand(hand) {
+            const counts = {};
+            const suitCounts = {};
+
+            hand.forEach(c => {
+                counts[c.value] = (counts[c.value] || 0) + 1;
+                suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+            });
+
+            const valCounts = Object.values(counts);
+            const isFlush = Object.values(suitCounts).includes(5);
+
+            if (valCounts.includes(4)) return { name: '포카드 (Four of a Kind)', payout: 250 };
+            if (valCounts.includes(3) && valCounts.includes(2)) return { name: '풀하우스 (Full House)', payout: 90 };
+            if (isFlush) return { name: '플러시 (Flush)', payout: 60 };
+            if (valCounts.includes(3)) return { name: '트리플 (Three of a Kind)', payout: 30 };
+            if (valCounts.filter(x => x === 2).length === 2) return { name: '투페어 (Two Pair)', payout: 20 };
+            if (valCounts.includes(2)) return { name: '원페어 (One Pair)', payout: 10 };
+
+            return { name: '노페어 (High Card)', payout: 0 };
+        }
+
+        /* --- 2. 카드 뒤집기 --- */
+        function flipCard(cardElement) {
+            cardElement.classList.toggle('flipped');
+        }
+
+        /* --- 3. OX 퀴즈 --- */
+        function checkQuiz(answer) {
+            const resultDiv = document.getElementById('quizResult');
+            if (answer === 'X') {
+                resultDiv.style.color = '#00ffcc';
+                resultDiv.style.textShadow = '2px 2px 0px #000';
+                resultDiv.innerHTML = '🎉 STAGE CLEAR! 아주 명확하고 현명한 판단이군요! 😎';
+            } else {
+                resultDiv.style.color = '#ff007f';
+                resultDiv.style.textShadow = '2px 2px 0px #000';
+                resultDiv.innerHTML = '💥 GAME OVER! 틀렸습니다! 메가 홍균은 귀엽지 않습니다! 😱';
+            }
+        }
+
+        /* --- 4. 롤 챔피언 추천기 (슬롯머신 연출 - 전체 챔피언) --- */
+        const champions = [
+            "👁️ 벨코즈 - 기하학으로 적을 해체해버려!",
+            "☠️ 티모 - 버섯으로 적의 정신을 번쩍 들게 해주자!",
+            "🔨 뽀삐 - 망치 맛 좀 볼래? 다 날려버려!",
+            "🗡️ 야스오 - 하사기! 과학을 직접 증명해봐!",
+            "🐱 유미 - 라면 먹으면서도 승리 가능!",
+            "🪓 드레이븐 - 딜량이 곧 예술이다! 뚝배기 깨기!",
+            "💥 징크스 - 신나게 빵야빵야! 난장판을 만들어!",
+            "🌙 다이애나 - 달빛의 분노를 보여줄 시간!",
+            "🔮 아리 - 매혹 한 번으로 경기 집도 끝!",
+            "🔥 브랜드 - 전부 태워버려! 세상을 불바다로!",
+            "🛡️ 알리스타 - 쿵쿵따! 들어올려라!",
+            "⚡ 제라스 - 사거리 밖에서 폭격하는 재미!",
+            "🦾 블리츠크랭크 - 로켓 손 한 번으로 한타 종료!",
+            "🌪️ 요네 - 형에 이어 아우도 과학을 증명한다!",
+            "🔫 진 - 완벽한 4타의 예술을 보여주지!",
+            "🐶 나서스 - 20분 뒤엔 내가 이 협곡의 왕이다!",
+            "🐻 볼리베어 - 천둥의 신이 강림한다! 다 찢어발겨!",
+            "❄️ 애쉬 - 수정 화살 한 발로 맵 반대편까지 저격!",
+            "🎭 샤코 - 뒤에서 나타나는 깜짝 파티!",
+            "⚓ 노틸러스 - 닻줄 견인! 도망칠 생각 마라!",
+            "🦊 니코 - 내가 누구게? 변신술의 달인!",
+            "🗡️ 제드 - 보이지 않는 검이 가장 무서운 법!",
+            "🏹 베인 - 구르고 쏘고! 탱커 녹이는 맛!",
+            "🐸 탐 켄치 - 낼름! 아군도 적군도 다 삼켜버려!",
+            "🐉 아우렐리온 솔 - 우주급 브레스로 협곡을 쓸어버려!",
+            "🤖 오리아나 - 구체 하나로 5인 궁극기 각을 노려라!",
+            "🍄 릴리아 - 뾰로롱~ 빠르게 달리고 재워버리기!",
+            "⚔️ 가렌 - 데마시아!! 정의의 심판을 내려라!",
+            "👑 다리우스 - 녹서스의 단두대! 5스택 쌓으면 다 끝났어!",
+            "🎵 소라카 - 별의 가호로 아군을 절대 죽이지 않겠어!",
+            "🧙‍♂️ 베이가 - 내 사악한 마력이 끝없이 솟아오른다!",
+            "🦂 스카너 - 꼬리로 콕 찍어서 우리 팀 진영까지 배달!",
+            "💣 직스 - 폭탄 던지고 포탑 한 방에 철거하기!",
+            "👻 쓰레쉬 - 사형 선고 적중! 랜턴 타고 어서 와!",
+            "🐺 워윅 - 피 냄새를 맡았다... 끝까지 추격한다!",
+            "🦋 카직스 - 고립된 적은 내 한 끼 식사일 뿐!",
+            "🦁 렝가 - 부쉬에서 점프! 원딜 삭제 0.1초 컷!",
+            "🃏 트위스티드 페이트 - 골드 카드 장전 완료! 궁극기로 합류!",
+            "🎸 소나 - 현악기 선율로 아군 버프와 스턴까지!",
+            "❄️ 애니비아 - 빙벽으로 퇴로 차단! 불사조의 부활!",
+            "🕷️ 엘리스 - 줄타기로 포탑 어그로 빼고 킬 따내기!",
+            "🐵 오공 - 분신술로 적을 농락하고 회전격으로 띄우기!",
+            "🧜‍♀️ 나미 - 해일로 적들을 전부 파도타기 시켜버려!",
+            "🌞 레오나 - 여명의 방패로 한 놈만 끝까지 물고 늘어진다!",
+            "🏹 케이틀린 - 비장의 한 발! 헤드샷으로 마무리!",
+            "🐗 세주아니 - 빙하 감옥 투척! 묵직한 탱킹의 정석!",
+            "💀 모데카이저 - 브라질(죽음의 세계)로 1:1 강제 초대!",
+            "🐍 카시오페아 - 석화의 응시! 뒤돌아보지 마라!",
+            "🧪 신지드 - 뒤쫓아오지 마! 독가스 마시고 싶지 않으면!",
+            "⚔️ 아트록스 - 내가 바로 세계의 종결자다!",
+            "🦊 아리 - 여우불과 매혹으로 적의 혼을 쏙 빼놓자!",
+            "👊 아칼리 - 연막 속에서 춤추는 그림자 암살자!",
+            "⛓️ 아크샨 - 악당 처치하고 우리 팀 전원 부활!",
+            "🪃 나르 - 분노 게이지 꽉 찼다! 메가 나르 변신!",
+            "🛡️ 갈리오 - 영웅 출현! 하늘에서 뚝 떨어지는 슈퍼세이브!",
+            "🍊 갱플랭크 - 귤 먹고 CC기 푼 다음 화약통 대폭발!",
+            "🍺 그라가스 - 배치기 한 번에 술통 폭발로 진형 붕괴!",
+            "🔫 그레이브즈 - 산탄총 2발 장전 완료! 연막탄 투척!",
+            "✂️ 그웬 - 싹둑싹둑! 신성한 안개 속에서 무적 딜링!",
+            "🌊 나피리 - 사냥개 무리와 함께 먹잇감을 물어뜯어라!",
+            "❄️ 누누와 윌럼프 - 세상에서 제일 큰 눈덩이 굴려간다!",
+            "🦁 니달리 - 창 한 방 꽂고 쿠거로 변신해서 덮치기!",
+            "🌊 닐라 - 채찍 검으로 환희의 소용돌이를 일으켜라!",
+            "😱 녹턴 - 어둠이 내린다... 불 끄고 원딜 암살!",
+            "🏹 바루스 - 역병 화살 중첩 터뜨리는 짜릿한 손맛!",
+            "👊 바이 - 일단 주먹부터 날리고 질문은 나중에 해!",
+            "👻 베이다 - 아니, 벨베스! 공허의 여제가  공속으로 찢는다!",
+            "🥀 브라이어 - 구속구 풀렸다! 폭주하는 흡혈 소녀!",
+            "🛡️ 브라움 - 내 방패 뒤에 숨어! 포로 간식 챙겨줄게!",
+            "🔮 빅토르 - 영광스러운 진화를 맞이할 시간이다!",
+            "🩸 블라디미르 - 웅덩이로 스킬 다 피하고 혈사병 폭발!",
+            "🏜️ 사이온 - 멈출 수 없는 맹공! 고속도로 뚫고 돌진!",
+            "⛓️ 사일러스 - 네 궁극기, 이제 내 거다!",
+            "🌹 자이라 - 가시 덩굴과 식물들로 협곡을 정원으로!",
+            "🛡️ 자르반 4세 - 데마시아의 깃창 콤보 후 대격변 가두기!",
+            "💜 자야 - 깃털 쫙 깔아놓고 깃부르미로 싹 다 속박!",
+            "🧪 자크 - 젤리 줍고 새총 발사로 예상치 못한 갱킹!",
+            "⚡ 제리 - 스파크 팍팍! 벽 타고 넘어오는 스피드 레이서!",
+            "🔨 제이스 - 캐논으로 포킹하고 해머로 찍어 누르기!",
+            "💤 조이 - 통통별 맞고 한 방에 회색 화면 구경하기!",
+            "💨 잔나 - 회오리와 계절풍으로 암살자 접근 원천 봉쇄!",
+            "👊 잭스 - 가로등 하나만 있어도 내가 이긴다!",
+            "⚔️ 이렐리아 - 칼날 쇄도 무한 초기화! 화려한 무빙!",
+            "👻 이블린 - 은신 상태로 접근해 매혹 터뜨리기!",
+            "🏹 이즈리얼 - 비전 이동으로 다 피하고 신비한 화살 포킹!",
+            "🕰️ 질리언 - 시한폭탄 2연속 스턴과 궁극기 부활!",
+            "🌪️ 잔나 - 태풍의 눈으로 아군 원딜 철통 보호!",
+            "🗡️ 카타리나 - 킬 관여할 때마다 쿨타임 초기화! 펜타킬 제조기!",
+            "🦋 카이사 - 공허 추적자 맞히고 사냥본능으로 돌진!",
+            "👻 카서스 - 죽어서도 진혼곡으로 전 라인 킬 쓸어담기!",
+            "🗡️ 카사딘 - 16레벨 찍었다! 균열 이동 무한 난사!",
+            "🪓 올라프 - 라그나로크 발동! CC기 무시하고 도끼질!",
+            "🐐 오른 - 대장장이의 솜씨로 아군 아이템 업그레이드!",
+            "🌑 요릭 - 안개 마녀와 구울 군단으로 사이드 철거반!",
+            "🐻 우디르 - 4가지 태세 변환으로 협곡을 휘젓는 야수!",
+            "🦀 우르곳 - 공포의 저편! 사슬로 끌고 와서 갈아버리기!",
+            "🌲 아이번 - 정글 몬스터는 내 친구! 데이지 소환!",
+            "🦅 아지르 - 슈리마의 황제! 병사들로 토스 각 보기!",
+            "🏹 아펠리오스 - 5가지 무기를 자유자재로 다루는 달의 무기상!",
+            "🛡️ 암베사 - 녹서스의 전쟁 군주! 쉴 새 없는 돌진 콤보!",
+            "🧸 애니 - 티버!! 곰인형 내던지고 광역 스턴!",
+            "🔥 오로라 - 차원을 넘나드는 토끼 마녀의 영혼 공격!",
+            "🌊 일라오이 - 영혼의 시험! 촉수 밭에서 1대5 무쌍!",
+            "🗡️ 탈론 - 벽 넘고 또 넘어서 파쿠르 암살!",
+            "🪨 탈리야 - 지각변동으로 띄우고 바위술사의 벽으로 퇴로 차단!",
+            "💎 타릭 - 황홀한 강타! 무적 궁극기로 한타 뒤집기!",
+            "🌪️ 트린다미어 - 5초 동안 절대 죽지 않는 불사의 분노!",
+            "🧌 트런들 - 기둥 세우고 진압으로 탱커 능력치 훔치기!",
+            "🔫 트리스타나 - 로켓 점프 초기화! 포탑까지 순식간에 폭파!",
+            "🏹 트위치 - 은신 풀고 무차별 난사! 독 중첩 폭발!",
+            "👊 리 신 - 음파 적중! 화려한 인섹킥으로 적 배달!",
+            "🗡️ 리븐 - 부러진 검의 화려한 평캔 콤보!",
+            "❄️ 리산드라 - 얼음 무덤으로 나도 살리고 적도 얼리고!",
+            "🔫 루시안 - 빛의 사수! 화려한 대시와 쌍권총 난사!",
+            "🧚 룰루 - 커져라! 변덕쟁이로 적 암살자를 다람쥐로!",
+            "🦌 릴리아 - 몽환의 티끌 뿌리고 자장가로 5인 수면!",
+            "🎸 르블랑 - 왜곡으로 들어갔다 빠져나오는 환상의 마술사!",
+            "🐊 레넥톤 - 분노 쌓인 무자비한 포식자의 콤보!",
+            "🐎 렐 - 강철의 여인! 말 타고 들이받아 5인 에어본!",
+            "🛡️ 람머스 - 구른다... 그래. 원딜 반사 데미지로 자멸시키기!",
+            "🪶 라칸 - 화려한 등장! 매혹과 에어본으로 이니시 종결!",
+            "🌌 럭스 - 최후의 섬광! 레이저 빔으로 맵 가로지르기!",
+            "🔥 럼블 - 이퀄라이저 미사일 투하! 열 관리의 장인!",
+            "👻 레나타 글라스크 - 적군끼리 서로 때리게 만드는 적대적 인수!",
+            "🗡️ 피오라 - 4방향 급소 다 터뜨리고 대결투 승리!",
+            "🐟 피즈 - 재간둥이로 모든 스킬 회피하고 상어 소환!",
+            "🎃 피들스틱 - 까마귀 폭풍! 공포 걸고 영혼 흡수!",
+            "🐢 우디르 - 곰 태세로 스턴 먹이고 불사조 태세로 지지고!",
+            "🏹 퀸 - 발러와 함께 초고속 로밍! 실명 화살!",
+            "🗡️ 키아나 - 원소의 여왕! 벽 궁극기로 한타 터뜨리기!",
+            "🐑 킨드레드 - 양의 안식처! 죽음마저 유예시키는 궁극기!",
+            "🦎 클레드 - 스칼 타고 돌격!! 후퇴란 없다!",
+            "🌪️ 케일 - 16레벨 승천 완료! 무적과 광역 딜의 화신!",
+            "⚡ 케넨 - 날카로운 소용돌이! 5인 기절 감전 파티!",
+            "🦋 카직스 - 진화 완료! 어둠 속에서 튀어나오는 사마귀!",
+            "⛓️ 칼리스타 - 창 꽂고 뽑아 찢기! 서약자 던지기!",
+            "🪓 카밀 - 마법공학 최후통첩! 가둬놓고 1:1 참교육!",
+            "🦂 스카너 - 대지의 수호자! 벽 뚫고 돌진해서 납치!",
+            "🐉 쉬바나 - 용으로 변신! 화염 브레스로 한타 휩쓸기!",
+            "🌟 세라핀 - 앙코르! 매혹적인 노래로 한타 지배!",
+            "👻 세나 - 안개 흡수하고 사거리 무한 증가! 여명의 그림자!",
+            "🛡️ 쉔 - 단결된 의지! 글로벌 궁극기로 아군 슈퍼세이브!",
+            "❄️ 세주아니 - 혹한의 서릿발과 빙하 감옥으로 CC기 지옥!",
+            "🐛 코그모 - 살아있는 야포! 공속 5.0으로 다 녹여버리기!",
+            "🚁 코르키 - 발키리 돌진! 특급 폭탄 배송 완료!",
+            "🏜️ 크산테 - 총공세 발동! 탱커에서 암살자로 돌변!",
+            "🗡️ 마스터 이 - 명상하고 일격 필살! 우주류 검술의 끝!",
+            "🌳 마오카이 - 뒤틀린 전진! 묘목 던지고 대자연의 마수!",
+            "🪨 말파이트 - 멈출 수 없는 힘!! 5인 궁극기 에어본!",
+            "🔮 말자하 - 황천의 손아귀! 억제로 한 명 무조건 컷!",
+            "🐉 스몰더 - 엄마아아!! 225스택 쌓고 화염 브레스 발사!",
+            "🖌️ 흐웨이 - 10가지 스킬을 자유자재로 그리는 천재 화가!",
+            "🐎 헤카림 - 그림자의 맹습! 이속 비례 공격력으로 들이받기!",
+            "🔧 하이머딩거 - 포탑 3개 설치 완료! 니가와 메타의 정석!",
+            "👻 비에고 - 몰락한 왕! 적을 처치하고 그 몸을 지배한다!",
+            "🛡️ 판테온 - 거대 유성 강하! 방패 돌격으로 확정 스턴!",
+            "🦈 파이크 - 깊은 바다의 처형! 궁극기 연속 처형 골드 복사!",
+            "🧱 탈리야 - 바위술사의 벽으로 적 팀 반으로 갈라버리기!",
+            "🐺 나피리 - 다르킨 사냥개! 무리 지어 돌진하는 암살자!",
+            "🌊 노틸러스 - 폭뢰 발사! 확정 에어본으로 원딜 물기!",
+            "🗡️ 니달리 - 창 한 방의 짜릿함! 정글링 속도 최강!",
+            "⚡ 볼리베어 - 폭풍을 부르는 자! 포탑까지 무력화시키는 궁극기!",
+            "🌑 다이애나 - 달빛 낙하! 5인 끌어당기고 광역 폭발!",
+            "🎭 진 - 커튼 콜! 4발의 저격탄으로 무대를 마무리!",
+            "🦊 아리 - 혼령 질주! 3단 대시로 자유자재 카이팅!",
+            "🧪 신지드 - 한타에서 미친 듯이 뛰어다니며 독 뿌리기!",
+            "🛡️ 레오나 - 흑점 폭발! 태양의 힘으로 움직이지 못하게 묶기!",
+            "🔮 신드라 - 어둠 구체 7개 모아서 적 원딜 한 방에 삭제!",
+            "🌑 아펠리오스 - 반월검 스택 쌓고 근접전 최강자 등극!",
+            "🪓 다리우스 - 녹서스의 힘! 5스택 학살의 시작!",
+            "❄️ 브라움 - 빙하 균열! 듬직하게 앞라인 다 막아주기!",
+            "🔥 브랜드 - 대자연의 불꽃! 한타에서 광역 딜량 1등!",
+            "💀 카서스 - 죽음의 노래! R 버튼 하나로 전 세계 타격!"
+        ];
+
+        let isRolling = false;
+        function recommendChampion() {
+            if (isRolling) return;
+            isRolling = true;
+            const lolResult = document.getElementById('lolResult');
+            const btnLol = document.getElementById('btnLol');
+            btnLol.disabled = true;
+
+            let count = 0;
+            const maxRolls = 20;
+            const interval = setInterval(() => {
+                const randomTemp = champions[Math.floor(Math.random() * champions.length)];
+                lolResult.innerText = randomTemp;
+                count++;
+
+                if (count >= maxRolls) {
+                    clearInterval(interval);
+                    const finalPick = champions[Math.floor(Math.random() * champions.length)];
+                    lolResult.innerText = `🎯 Pick: ${finalPick}`;
+                    isRolling = false;
+                    btnLol.disabled = false;
+                }
+            }, 80);
+        }
+
+        function showMessage(elementId, msg) {
+            const el = document.getElementById(elementId);
+            if (el) el.innerText = msg;
+        }
+    </script>
+</body>
+</html><!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
