@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>레트로 겜창의 아케이드 센터</title>
+    <!-- 8비트 레트로 느낌의 폰트 -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DungGeunMo&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0b0517;
+            --container-bg: rgba(20, 10, 35, 0.95);
+            --text-color: #00ffcc;
+            --text-secondary: #ff007f;
+            --card-bg: #1e0a38;
+            --card-back-bg: #ff007f;
+            --card-border: #00ffcc;
+            --btn-bg: #ff007f;
+            --btn-text: #ffffff;
+            --shadow-color: #ff00aa;
+            --crt-scanline: rgba(18, 16, 16, 0.3);
+            --pixel-yellow: #ffff00;
+        }
+
+        [data-theme="light"] {
+            --bg-color: #c8d6e5;
+            --container-bg: rgba(240, 243, 246, 0.95);
+            --text-color: #10ac84;
+            --text-secondary: #ff4757;
+            --card-bg: #ffffff;
+            --card-back-bg: #ff4757;
+            --card-border: #10ac84;
+            --btn-bg: #2e86de;
+            --btn-text: #ffffff;
+            --shadow-color: #2e86de;
+            --crt-scanline: rgba(255, 255, 255, 0.1);
+            --pixel-yellow: #ff9f43;
+        }
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px 10px;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'DungGeunMo', 'Courier New', monospace;
+            transition: background-color 0.3s ease, color 0.3s ease;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* 레트로 CRT 브라운관 스캔라인 효과 */
+        body::before {
+            content: " ";
+            display: block;
+            position: fixed;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(var(--crt-scanline) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            z-index: 9998;
+            background-size: 100% 4px, 6px 100%;
+            pointer-events: none;
+        }
+
+        /* 캔버스 (마우스 8비트 픽셀 반짝이) */
+        #sparkleCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        /* 전광판 형태의 상단 바 */
+        .arcade-marquee {
+            width: 100%;
+            max-width: 800px;
+            background: #000;
+            border: 4px solid var(--text-secondary);
+            border-bottom: none;
+            border-radius: 12px 12px 0 0;
+            padding: 8px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -4px 15px rgba(255, 0, 127, 0.4);
+            font-size: 13px;
+        }
+
+        .coin-status {
+            color: var(--pixel-yellow);
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0.2; }
+        }
+
+        /* 테마 변경 버튼 */
+        .theme-toggle-btn {
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: 2px solid var(--btn-text);
+            padding: 6px 10px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 13px;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+            transition: transform 0.1s;
+        }
+
+        .theme-toggle-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        /* 메인 아케이드 캐비닛 컨테이너 */
+        .main-container {
+            max-width: 800px;
+            width: 100%;
+            background-color: var(--container-bg);
+            border: 4px solid var(--text-color);
+            box-shadow: 0 0 20px var(--text-color), 8px 8px 0px #000;
+            padding: 25px;
+            border-radius: 0 0 12px 12px;
+            text-align: center;
+            position: relative;
+        }
+
+        /* 8비트 스타일 네온 글리치 효과 타이틀 */
+        .header-title {
+            font-size: 2.2rem;
+            margin-bottom: 25px;
+            color: var(--text-secondary);
+            text-shadow: 3px 3px 0px #000;
+            position: relative;
+        }
+
+        .bouncing-nickname {
+            display: inline-block;
+            font-family: 'DungGeunMo', monospace;
+            color: var(--pixel-yellow);
+            animation: bounce 0.5s infinite alternate cubic-bezier(0.5, 0.05, 1, 0.5);
+            font-size: 3rem;
+            text-shadow: 4px 4px 0px #ff0055, 0 0 10px var(--pixel-yellow);
+            padding: 0 5px;
+            letter-spacing: 2px;
+        }
+
+        @keyframes bounce {
+            from {
+                transform: translateY(0);
+            }
+            to {
+                transform: translateY(-16px);
+            }
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            margin: 30px 0 18px 0;
+            border: 2px solid var(--text-color);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 8px;
+            color: var(--pixel-yellow);
+            box-shadow: 4px 4px 0px #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        /* 레트로 카드 스타일 */
+        .card-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .card {
+            background-color: transparent;
+            width: 220px;
+            height: 210px;
+            perspective: 1000px;
+            cursor: pointer;
+        }
+
+        .card-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            text-align: center;
+            transition: transform 0.6s cubic-bezier(0.4, 0.2, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .card.flipped .card-inner {
+            transform: rotateY(180deg);
+        }
+
+        .card-front, .card-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            border: 4px solid var(--card-border);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 15px;
+            box-shadow: 5px 5px 0px #000;
+        }
+
+        .card-front {
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+
+        .card-front .icon {
+            font-size: 3.2rem;
+            margin-bottom: 8px;
+            filter: drop-shadow(2px 2px 0px #000);
+        }
+
+        .card-front .hint {
+            font-size: 0.8rem;
+            color: var(--pixel-yellow);
+            margin-top: 10px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 3px 6px;
+            border: 1px dashed var(--pixel-yellow);
+        }
+
+        .card-back {
+            background-color: var(--card-back-bg);
+            color: #ffffff;
+            transform: rotateY(180deg);
+            font-size: 1rem;
+            line-height: 1.4;
+            word-break: keep-all;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        /* OX 퀴즈 박스 (아케이드 버튼 감성) */
+        .quiz-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.2);
+        }
+
+        .quiz-question {
+            font-size: 1.25rem;
+            margin-bottom: 20px;
+            word-break: keep-all;
+            color: #fff;
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .quiz-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 25px;
+        }
+
+        .btn-ox {
+            width: 75px;
+            height: 75px;
+            font-size: 2.2rem;
+            font-family: 'Press Start 2P', 'DungGeunMo', monospace;
+            background-color: var(--btn-bg);
+            color: var(--btn-text);
+            border: 4px solid #fff;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 6px 0px #880044, 0 10px 10px rgba(0,0,0,0.5);
+            transition: all 0.1s;
+        }
+
+        .btn-ox:active {
+            transform: translateY(6px);
+            box-shadow: 0 0px 0px #880044, 0 4px 5px rgba(0,0,0,0.5);
+        }
+
+        .quiz-result {
+            margin-top: 18px;
+            font-size: 1.2rem;
+            min-height: 35px;
+            font-weight: bold;
+            padding: 8px;
+        }
+
+        /* 롤 챔피언 추천 슬롯머신 감성 */
+        .lol-box {
+            background: rgba(0, 0, 0, 0.5);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 10px rgba(0,255,204,0.2);
+        }
+
+        /* 미니게임 섹션 스타일 */
+        .minigame-box {
+            background: rgba(0, 0, 0, 0.6);
+            border: 3px solid var(--text-color);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 15px;
+            box-shadow: inset 0 0 15px rgba(0, 255, 204, 0.2);
+        }
+
+        .game-nav {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .btn-tab {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 2px solid var(--text-color);
+            padding: 8px 16px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-tab.active {
+            background-color: var(--btn-bg);
+            color: #fff;
+            border-color: #fff;
+            box-shadow: 0 0 10px var(--btn-bg);
+        }
+
+        .game-panel {
+            display: none;
+        }
+
+        .game-panel.active {
+            display: block;
+        }
+
+        .card-display {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 15px 0;
+            min-height: 80px;
+            flex-wrap: wrap;
+        }
+
+        .playing-card {
+            width: 55px;
+            height: 75px;
+            background: #fff;
+            color: #000;
+            border: 2px solid #000;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 5px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 11px;
+            box-shadow: 3px 3px 0px #000;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .playing-card.red {
+            color: #e74c3c;
+        }
+
+        .playing-card.selected {
+            transform: translateY(-10px);
+            border: 3px solid var(--pixel-yellow);
+            box-shadow: 0 0 10px var(--pixel-yellow);
+        }
+
+        .card-back-style {
+            background: linear-gradient(135deg, #b20000 25%, #800000 25%, #800000 50%, #b20000 50%, #b20000 75%, #800000 75%, #800000 100%);
+            background-size: 10px 10px;
+            border: 2px solid #fff;
+        }
+
+        .game-controls {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .btn-action {
+            background: var(--btn-bg);
+            color: var(--btn-text);
+            border: 2px solid #fff;
+            padding: 8px 16px;
+            font-family: 'DungGeunMo', monospace;
+            font-size: 1rem;
+            cursor: pointer;
+            box-shadow: 3px 3px 0px #000;
+        }
+
+        .btn-action:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .status-msg {
+            font-size: 1.1rem;
+            color: var(--pixel-yellow);
+            margin: 10px 0;
+            min-height: 28px;
+            text-shadow: 1px 1px 0px #000;
+        }
+
+        .btn-lol {
+            padding: 14px 28px;
+            font-size: 1.2rem;
+            font-family: 'DungGeunMo', monospace;
+            background: linear-gradient(180deg, #ffee00 0%, #ff8800 100%);
+            color: #000;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 4px 4px 0px #000;
+            font-weight: bold;
+            transition: transform 0.1s;
+            text-shadow: 1px 1px 0px #fff;
+        }
+
+        .btn-lol:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px #000;
+        }
+
+        .lol-result-screen {
+            background: #000;
+            border: 3px solid var(--pixel-yellow);
+            border-radius: 6px;
+            margin-top: 18px;
+            padding: 15px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(255, 238, 0, 0.4);
+        }
+
+        .lol-result {
+            font-size: 1.3rem;
+            color: var(--pixel-yellow);
+            text-shadow: 2px 2px 0px #ff0055;
+            word-break: keep-all;
+        }
+
+        /* 하단 푸터 아케이드 스코어 */
+        .arcade-footer {
+            margin-top: 25px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            color: var(--text-color);
+            opacity: 0.8;
+            letter-spacing: 1px;
+        }
+
+        /* 반응형 디자인 */
+        @media (max-width: 600px) {
+            .header-title {
+                font-size: 1.5rem;
+            }
+            .bouncing-nickname {
+                font-size: 2.2rem;
+            }
+            .card {
+                width: 100%;
+                max-width: 280px;
+                height: 190px;
+            }
+            .section-title {
+                font-size: 1.1rem;
+            }
+            .quiz-question {
+                font-size: 1rem;
+            }
+            .btn-ox {
+                width: 65px;
+                height: 65px;
+                font-size: 1.8rem;
+            }
+            .arcade-marquee {
+                font-size: 10px;
+            }
+            .coin-status {
+                font-size: 9px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 마우스 8비트 반짝이 캔버스 -->
+    <canvas id="sparkleCanvas"></canvas>
+
+    <!-- 오락실 전광판 상단 바 -->
+    <div class="arcade-marquee">
+        <div class="coin-status">INSERT COIN 200.0</div>
+        <button class="theme-toggle-btn" onclick="toggleTheme()" id="themeBtn">☀ LIGHT MODE</button>
+    </div>
+
+    <div class="main-container">
+        <!-- 타이틀 및 통통 튀는 별명 -->
+        <div class="header-title">
+            WELCOME TO <br>
+            <span class="bouncing-nickname">겜창</span> 'S ARCADE 🕹️
+        </div>
+
+        <!-- 좋아하는 것 3가지 (카드 뒤집기) -->
+        <div class="section-title">👾 STAGE 1. FAVORITE CARDS</div>
+        <div class="card-container">
+            <!-- 카드 1: 벨코즈 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">👁️</div>
+                        <h3>벨코즈</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "완벽한 기하학적 분해! 3점 분사 레이저로 적을 해체할 때 느껴지는 지적 쾌감이 최고다!"
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카드 2: 게임 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">🎮</div>
+                        <h3>게임</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "내 인생의 도파민 충전소! 화면 속 세상에서 퀘스트 깨고 랭크 올릴 때가 제일 신남!"
+                    </div>
+                </div>
+            </div>
+
+            <!-- 카드 3: 동물 -->
+            <div class="card" onclick="flipCard(this)">
+                <div class="card-inner">
+                    <div class="card-front">
+                        <div class="icon">🐶</div>
+                        <h3>동물</h3>
+                        <div class="hint">[PRESS TO FLIP]</div>
+                    </div>
+                    <div class="card-back">
+                        "귀여운 털뭉치들은 세상을 구한다! 힐링 그 자체라 귀여워서 안 좋아할 수가 없음."
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- OX 퀴즈 -->
+        <div class="section-title">❓ STAGE 2. OX QUIZ</div>
+        <div class="quiz-box">
+            <div class="quiz-question">Q. "메가 홍균이 귀엽다고 생각하는가?"</div>
+            <div class="quiz-buttons">
+                <button class="btn-ox" onclick="checkQuiz('O')">O</button>
+                <button class="btn-ox" onclick="checkQuiz('X')">X</button>
+            </div>
+            <div class="quiz-result" id="quizResult"></div>
+        </div>
+
+        <!-- 롤 챔피언 추천기 -->
+        <div class="section-title">🎲 STAGE 3. LOL PICK SLOT</div>
+        <div class="lol-box">
+            <button class="btn-lol" id="btnLol" onclick="recommendChampion()">🕹️ 챔피언 랜덤 픽!</button>
+            <div class="lol-result-screen">
+                <div class="lol-result" id="lolResult">PRESS BUTTON TO ROLL</div>
+            </div>
+        </div>
+
+        <!-- STAGE 4. 레트로 마이닝 (광산 클릭) -->
+        <div class="section-title">⛏️ STAGE 4. COIN MINE</div>
+        <div class="minigame-box" style="text-align: center;">
+            <div class="status-msg" id="mineStatus">곡괭이질을 해서 코인을 캐내세요! (클릭당 +0.1 COIN)</div>
+            <div style="margin: 20px 0;">
+                <button class="btn-lol" onclick="mineCoin(event)" style="font-size: 1.5rem; padding: 20px 40px; background: linear-gradient(180deg, #575833 0%, #2f3640 100%); color: #00ffcc; border-color: #00ffcc;">
+                    ⛏️ CLICK TO MINE!
+                </button>
+            </div>
+            <div style="font-size: 1.1rem; color: var(--pixel-yellow);">
+                채굴된 코인: <span id="minedCoins">0.0</span> COIN
+            </div>
+        </div>
+
+        <!-- STAGE 5. 레트로 카지노 미니게임 -->
+        <div class="section-title">🃏 STAGE 5. RETRO CASINO</div>
+        <div class="minigame-box">
+            <div class="game-nav">
+                <button class="btn-tab active" onclick="switchGame('bj', event)">블랙잭 (Blackjack)</button>
+                <button class="btn-tab" onclick="switchGame('poker', event)">비디오 포커 (Poker)</button>
+            </div>
+
+            <!-- 블랙잭 패널 -->
+            <div id="bjPanel" class="game-panel active">
+                <div class="status-msg" id="bjStatus">코인을 배팅하고 게임을 시작하세요!</div>
+                <div>
+                    <p>딜러 카드 <span id="dealerScore"></span></p>
+                    <div class="card-display" id="dealerCards"></div>
+                </div>
+                <div>
+                    <p>플레이어 카드 <span id="playerScore"></span></p>
+                    <div class="card-display" id="playerCards"></div>
+                </div>
+                <div class="game-controls">
+                    <button class="btn-action" id="bjBetBtn" onclick="startBlackjack()">배팅 (10 COIN)</button>
+                    <button class="btn-action" id="hitBtn" onclick="bjHit()" disabled>히트 (Hit)</button>
+                    <button class="btn-action" id="standBtn" onclick="bjStand()" disabled>스탠드 (Stand)</button>
+                </div>
+            </div>
+
+            <!-- 비디오 포커 패널 -->
+            <div id="pokerPanel" class="game-panel">
+                <div class="status-msg" id="pokerStatus">교체할 카드를 클릭 후 DRAW를 누르세요!</div>
+                <div class="card-display" id="pokerCards"></div>
+                <div class="game-controls">
+                    <button class="btn-action" id="pokerBetBtn" onclick="startPoker()">게임 시작 (10 COIN)</button>
+                    <button class="btn-action" id="drawBtn" onclick="pokerDraw()" disabled>카드 교체 (Draw)</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 하단 아케이드 풋터 -->
+        <div class="arcade-footer">
+            HIGH SCORE: 999999 | CREDIT: <span id="coinCount">200.0</span>
+        </div>
+    </div>
+
+    <script>
+        /* --- 1. 테마 전환 (라이트/다크) --- */
+        let isDark = true;
+        function toggleTheme() {
+            isDark = !isDark;
+            const themeBtn = document.getElementById('themeBtn');
+            if (isDark) {
+                document.documentElement.removeAttribute('data-theme');
+                themeBtn.innerText = '☀ LIGHT MODE';
+            } else {
+                document.documentElement.setAttribute('data-theme', 'light');
+                themeBtn.innerText = '🌙 DARK MODE';
+            }
+        }
+
+        /* --- 코인 시스템 --- */
+        let coins = 200.0;
+        let minedCoinsTotal = 0.0;
+
+        function updateCoins(amount) {
+            coins = Math.round((coins + amount) * 10) / 10;
+            document.getElementById('coinCount').innerText = coins.toFixed(1);
+            document.querySelector('.coin-status').innerText = `INSERT COIN ${coins.toFixed(1)}`;
+        }
+
+        /* --- 캔버스 8비트 파티클 이펙트 --- */
+        const canvas = document.getElementById('sparkleCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        class PixelParticle {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.floor(Math.random() * 4) + 3;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4 - 2;
+                this.color = ['#00ffcc', '#ff007f', '#ffff00', '#ffffff'][Math.floor(Math.random() * 4)];
+                this.life = 30;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.1; // 중력
+                this.life--;
+            }
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.size, this.size);
+            }
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if (Math.random() < 0.3) {
+                particles.push(new PixelParticle(e.clientX, e.clientY));
+            }
+        });
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].update();
+                particles[i].draw();
+                if (particles[i].life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* --- 4-1. 광산 채굴 클릭 함수 --- */
+        function mineCoin(e) {
+            updateCoins(0.1);
+            minedCoinsTotal = Math.round((minedCoinsTotal + 0.1) * 10) / 10;
+            document.getElementById('minedCoins').innerText = minedCoinsTotal.toFixed(1);
+
+            const x = e.clientX || e.pageX;
+            const y = e.clientY || e.pageY;
+            if (x && y) {
+                for (let i = 0; i < 6; i++) {
+                    particles.push(new PixelParticle(x, y));
+                }
+            }
+        }
+
+        /* --- 카드 덱 생성 공통 함수 --- */
+        const suits = ['♠', '♥', '♦', '♣'];
+        const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+
+        function createDeck() {
+            let deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit, value });
+                }
+            }
+            return deck.sort(() => Math.random() - 0.5);
+        }
+
+        function createCardUI(card, isHidden = false, isSelected = false) {
+            const cardEl = document.createElement('div');
+            if (isHidden) {
+                cardEl.className = 'playing-card card-back-style';
+                return cardEl;
+            }
+            const isRed = card.suit === '♥' || card.suit === '♦';
+            cardEl.className = `playing-card ${isRed ? 'red' : ''} ${isSelected ? 'selected' : ''}`;
+            cardEl.innerHTML = `<div>${card.value}</div><div style="align-self:center;font-size:16px;">${card.suit}</div><div style="align-self:flex-end;">${card.value}</div>`;
+            return cardEl;
+        }
+
+        /* --- 탭 전환 --- */
+        function switchGame(game, event) {
+            document.querySelectorAll('.btn-tab').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.game-panel').forEach(panel => panel.classList.remove('active'));
+
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+
+            if (game === 'bj') {
+                document.getElementById('bjPanel').classList.add('active');
+            } else {
+                document.getElementById('pokerPanel').classList.add('active');
+            }
+        }
+
+        /* --- 2. 블랙잭 게임 로직 --- */
+        let bjDeck, dealerHand, playerHand, bjGameOver;
+
+        function getCardValue(card) {
+            if (['J', 'Q', 'K'].includes(card.value)) return 10;
+            if (card.value === 'A') return 11;
+            return parseInt(card.value);
+        }
+
+        function calcHandScore(hand) {
+            let score = 0;
+            let aces = 0;
+            for (let card of hand) {
+                let val = getCardValue(card);
+                if (card.value === 'A') aces++;
+                score += val;
+            }
+            while (score > 21 && aces > 0) {
+                score -= 10;
+                aces--;
+            }
+            return score;
+        }
+
+        function renderBJ() {
+            const dCards = document.getElementById('dealerCards');
+            const pCards = document.getElementById('playerCards');
+            dCards.innerHTML = '';
+            pCards.innerHTML = '';
+
+            dealerHand.forEach((card, i) => {
+                dCards.appendChild(createCardUI(card, !bjGameOver && i === 1));
+            });
+            playerHand.forEach(card => pCards.appendChild(createCardUI(card)));
+
+            document.getElementById('playerScore').innerText = `(${calcHandScore(playerHand)})`;
+            document.getElementById('dealerScore').innerText = bjGameOver ? `(${calcHandScore(dealerHand)})` : '';
+        }
+
+        function startBlackjack() {
+            if (coins < 10) return showMessage('bjStatus', '코인이 부족합니다!');
+            updateCoins(-10);
+
+            bjDeck = createDeck();
+            playerHand = [bjDeck.pop(), bjDeck.pop()];
+            dealerHand = [bjDeck.pop(), bjDeck.pop()];
+            bjGameOver = false;
+
+            document.getElementById('bjStatus').innerText = '히트 또는 스탠드를 선택하세요!';
+            document.getElementById('hitBtn').disabled = false;
+            document.getElementById('standBtn').disabled = false;
+            document.getElementById('bjBetBtn').disabled = true;
+
+            renderBJ();
+
+            if (calcHandScore(playerHand) === 21) {
+                bjEndGame('★ 블랙잭! 20 코인 획득! ★', 20);
+            }
+        }
+
+        function bjHit() {
+            playerHand.push(bjDeck.pop());
+            renderBJ();
+            if (calcHandScore(playerHand) > 21) {
+                bjEndGame('버스트! 딜러 승리 😭', 0);
+            }
+        }
+
+        function bjStand() {
+            while (calcHandScore(dealerHand) < 17) {
+                dealerHand.push(bjDeck.pop());
+            }
+            const pScore = calcHandScore(playerHand);
+            const dScore = calcHandScore(dealerHand);
+
+            if (dScore > 21 || pScore > dScore) {
+                bjEndGame('승리! 20 코인 획득! 🎉', 20);
+            } else if (pScore < dScore) {
+                bjEndGame('패배! 딜러 승리 💸', 0);
+            } else {
+                bjEndGame('무승부! 배팅금 환불 🤝', 10);
+            }
+        }
+
+        function bjEndGame(msg, winCoins) {
+            bjGameOver = true;
+            renderBJ();
+            document.getElementById('bjStatus').innerText = msg;
+            if (winCoins > 0) updateCoins(winCoins);
+
+            document.getElementById('hitBtn').disabled = true;
+            document.getElementById('standBtn').disabled = true;
+            document.getElementById('bjBetBtn').disabled = false;
+        }
+
+        /* --- 3. 비디오 포커 로직 --- */
+        let pokerDeck, pokerHand, selectedHold, pokerStage;
+
+        function startPoker() {
+            if (coins < 10) return showMessage('pokerStatus', '코인이 부족합니다!');
+            updateCoins(-10);
+
+            pokerDeck = createDeck();
+            pokerHand = [pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop(), pokerDeck.pop()];
+            selectedHold = [false, false, false, false, false];
+            pokerStage = 1;
+
+            document.getElementById('pokerStatus').innerText = '바꿀 카드를 클릭하고 DRAW 버튼을 누르세요!';
+            document.getElementById('pokerBetBtn').disabled = true;
+            document.getElementById('drawBtn').disabled = false;
+
+            renderPoker();
+        }
+
+        function renderPoker() {
+            const pCards = document.getElementById('pokerCards');
+            pCards.innerHTML = '';
+
+            pokerHand.forEach((card, i) => {
+                const cardUI = createCardUI(card, false, selectedHold[i]);
+                if (pokerStage === 1) {
+                    cardUI.onclick = () => {
+                        selectedHold[i] = !selectedHold[i];
+                        renderPoker();
+                    };
+                }
+                pCards.appendChild(cardUI);
+            });
+        }
+
+        function pokerDraw() {
+            for (let i = 0; i < 5; i++) {
+                if (selectedHold[i]) {
+                    pokerHand[i] = pokerDeck.pop();
+                }
+            }
+            pokerStage = 2;
+            renderPoker();
+
+            const result = evaluatePokerHand(pokerHand);
+            document.getElementById('pokerStatus').innerText = `${result.name}! +${result.payout} COINS!`;
+            if (result.payout > 0) updateCoins(result.payout);
+
+            document.getElementById('drawBtn').disabled = true;
+            document.getElementById('pokerBetBtn').disabled = false;
+        }
+
+        function evaluatePokerHand(hand) {
+            const counts = {};
+            const suitCounts = {};
+
+            hand.forEach(c => {
+                counts[c.value] = (counts[c.value] || 0) + 1;
+                suitCounts[c.suit] = (suitCounts[c.suit] || 0) + 1;
+            });
+
+            const valCounts = Object.values(counts);
+            const isFlush = Object.values(suitCounts).includes(5);
+
+            if (valCounts.includes(4)) return { name: '포카드 (Four of a Kind)', payout: 250 };
+            if (valCounts.includes(3) && valCounts.includes(2)) return { name: '풀하우스 (Full House)', payout: 90 };
+            if (isFlush) return { name: '플러시 (Flush)', payout: 60 };
+            if (valCounts.includes(3)) return { name: '트리플 (Three of a Kind)', payout: 30 };
+            if (valCounts.filter(x => x === 2).length === 2) return { name: '투페어 (Two Pair)', payout: 20 };
+            if (valCounts.includes(2)) return { name: '원페어 (One Pair)', payout: 10 };
+
+            return { name: '노페어 (High Card)', payout: 0 };
+        }
+
+        /* --- 2. 카드 뒤집기 --- */
+        function flipCard(cardElement) {
+            cardElement.classList.toggle('flipped');
+        }
+
+        /* --- 3. OX 퀴즈 --- */
+        function checkQuiz(answer) {
+            const resultDiv = document.getElementById('quizResult');
+            if (answer === 'X') {
+                resultDiv.style.color = '#00ffcc';
+                resultDiv.style.textShadow = '2px 2px 0px #000';
+                resultDiv.innerHTML = '🎉 STAGE CLEAR! 아주 명확하고 현명한 판단이군요! 😎';
+            } else {
+                resultDiv.style.color = '#ff007f';
+                resultDiv.style.textShadow = '2px 2px 0px #000';
+                resultDiv.innerHTML = '💥 GAME OVER! 틀렸습니다! 메가 홍균은 귀엽지 않습니다! 😱';
+            }
+        }
+
+        /* --- 4. 롤 챔피언 추천기 (슬롯머신 연출) --- */
+        const champions = [
+            "👁️ 벨코즈 - 기하학으로 적을 해체해버려!",
+            "☠️ 티모 - 버섯으로 적의 정신을 번쩍 들게 해주자!",
+            "🔨 뽀삐 - 망치 맛 좀 볼래? 다 날려버려!",
+            "🗡️ 야스오 - 하사기! 과학을 직접 증명해봐!",
+            "🐱 유미 - 라면 먹으면서도 승리 가능!",
+            "🪓 드레이븐 - 딜량이 곧 예술이다! 뚝배기 깨기!",
+            "💥 징크스 - 신나게 빵야빵야! 난장판을 만들어!",
+            "🌙 다이애나 - 달빛의 분노를 보여줄 시간!",
+            "🔮 아리 - 매혹 한 번으로 경기 집도 끝!",
+            "🔥 브랜드 - 전부 태워버려! 세상을 불바다로!",
+            "🛡️ 알리스타 - 쿵쿵따! 들어올려라!",
+            "⚡ 제라스 - 사거리 밖에서 폭격하는 재미!"
+        ];
+
+        let isRolling = false;
+        function recommendChampion() {
+            if (isRolling) return;
+            isRolling = true;
+            const lolResult = document.getElementById('lolResult');
+            const btnLol = document.getElementById('btnLol');
+            btnLol.disabled = true;
+
+            let count = 0;
+            const maxRolls = 20;
+            const interval = setInterval(() => {
+                const randomTemp = champions[Math.floor(Math.random() * champions.length)];
+                lolResult.innerText = randomTemp;
+                count++;
+
+                if (count >= maxRolls) {
+                    clearInterval(interval);
+                    const finalPick = champions[Math.floor(Math.random() * champions.length)];
+                    lolResult.innerText = `🎯 Pick: ${finalPick}`;
+                    isRolling = false;
+                    btnLol.disabled = false;
+                }
+            }, 80);
+        }
+
+        function showMessage(elementId, msg) {
+            const el = document.getElementById(elementId);
+            if (el) el.innerText = msg;
+        }
+    </script>
+</body>
+</html>
